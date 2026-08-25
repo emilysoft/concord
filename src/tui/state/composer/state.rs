@@ -951,7 +951,12 @@ impl DashboardState {
         }
 
         let file_content = self.composer.composer_input.value().trim().to_owned();
-        self.submit_composer_message(channel_id, content, file_content)
+        let is_reply = self.composer.reply_target_message_id.is_some();
+        let command = self.submit_composer_message(channel_id, content, file_content);
+        if command.is_some() && is_reply {
+            self.close_composer();
+        }
+        command
     }
 
     pub(in crate::tui) fn confirm_long_message_upload(&mut self) -> Option<AppCommand> {
@@ -975,11 +980,12 @@ impl DashboardState {
             "message.txt".to_owned(),
             confirmation.file_content.into_bytes(),
         );
-        Some(self.finish_composer_message_submission(
+        let command = self.finish_composer_message_submission(
             confirmation.channel_id,
             String::new(),
             Some(attachment),
-        ))
+        );
+        Some(command)
     }
 
     fn submit_composer_message(
@@ -1073,7 +1079,13 @@ impl DashboardState {
             _ => {}
         }
 
-        self.clear_submitted_composer();
+        let is_reply = match &command {
+            AppCommand::SendMessage { reply_to, .. } => reply_to.is_some(),
+            _ => false,
+        };
+        if is_reply {
+            self.close_composer();
+        }
         match &command {
             AppCommand::SendMessage {
                 channel_id,
