@@ -131,8 +131,10 @@ impl DashboardState {
         self.clear_message_row_content_metrics_cache();
 
         if self.message_pane_source() == Some(MessagePaneSource::ChannelMessages { channel_id }) {
-            self.messages.message_auto_follow = true;
-            self.follow_latest_message();
+            if self.is_viewport_at_latest_message() {
+                self.messages.message_auto_follow = true;
+                self.follow_latest_message();
+            }
         }
     }
 
